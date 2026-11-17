@@ -2,6 +2,7 @@
 <html lang="bn">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-cache">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>৮ম প্রতিষ্ঠাবার্ষিকী ফটো ফ্রেম | ইসলামী বিশ্ববিদ্যালয় রিপোর্টার্স ইউনিটি</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -69,7 +70,11 @@ footer{text-align:center;color:var(--mute);font-size:14px;padding:0 16px 28px}
   var fileEl=document.getElementById('file'), nm=document.getElementById('nm'), ds=document.getElementById('ds');
   var zr=document.getElementById('zr'), zoomBox=document.getElementById('zoomBox'), dl=document.getElementById('dl'), resetBtn=document.getElementById('reset');
   var frame=new Image(), img=null, base=1, z=1, cx=0, cy=0, frameReady=false;
-  frame.onload=function(){frameReady=true;draw()}; frame.src='frame.png';
+  frame.onload=function(){frameReady=true;draw()};
+  // always revalidate the frame so a replaced frame.png shows up without manual cache clearing
+  fetch('frame.png',{cache:'no-cache'}).then(function(r){if(!r.ok)throw 0;return r.blob()})
+    .then(function(b){frame.src=URL.createObjectURL(b)})
+    .catch(function(){frame.src='frame.png?v='+Date.now()});
 
   function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
   function fit(text,font,weight,max,start,min){var s=start;ctx.font=weight+' '+s+'px '+font;while(s>min&&ctx.measureText(text).width>max){s-=1;ctx.font=weight+' '+s+'px '+font}return s}
