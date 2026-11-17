@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--mute);font-size:14px;padding:0 16px 28px}
     <p class="hint">ছবির উপর আঙুল বা মাউস দিয়ে টেনে সরান। জুম করতে স্লাইডার, মাউসের স্ক্রল বা দুই আঙুলে চিমটি দিন।</p>
     <div><label for="nm">নাম</label><input id="nm" type="text" maxlength="60" placeholder="আপনার নাম" autocomplete="off"></div>
     <div><label for="ds">পদবী</label><input id="ds" type="text" maxlength="80" placeholder="আপনার পদবী" autocomplete="off"></div>
-    <button id="dl" class="primary" type="button" disabled>ডাউনলোড (PNG)</button>
+    <button id="dl" class="primary" type="button" disabled>ডাউনলোড (JPG)</button>
   </section>
 </main>
 <footer>ইসলামী বিশ্ববিদ্যালয় রিপোর্টার্স ইউনিটি</footer>
@@ -106,11 +106,17 @@ footer{text-align:center;color:var(--mute);font-size:14px;padding:0 16px 28px}
   function setZoom(v){
     if(!img)return;z=Math.max(.5,Math.min(4,v));zr.value=Math.round(z*100);clamp();draw();
   }
+  var MAXSIDE=4096;
+  function shrink(im){
+    var m=Math.max(im.width,im.height);if(m<=MAXSIDE)return im;
+    var r=MAXSIDE/m,w=Math.round(im.width*r),h=Math.round(im.height*r),c=document.createElement('canvas');
+    c.width=w;c.height=h;var x=c.getContext('2d');x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(im,0,0,w,h);return c;
+  }
   function load(f){
     if(!f||!/^image\//.test(f.type))return;
     var u=URL.createObjectURL(f),im=new Image();
     im.onload=function(){
-      img=im;base=Math.max(HOLE.w/im.width,HOLE.h/im.height);z=1;cx=cy=0;zr.value=100;
+      img=shrink(im);URL.revokeObjectURL(u);base=Math.max(HOLE.w/img.width,HOLE.h/img.height);z=1;cx=cy=0;zr.value=100;
       cv.classList.remove('empty');zoomBox.classList.remove('off');dl.disabled=false;resetBtn.disabled=false;draw();
     };
     im.src=u;
@@ -147,13 +153,27 @@ footer{text-align:center;color:var(--mute);font-size:14px;padding:0 16px 28px}
   // drag & drop a file
   ['dragover','drop'].forEach(function(t){document.addEventListener(t,function(e){e.preventDefault();if(t==='drop'&&e.dataTransfer.files[0])load(e.dataTransfer.files[0])})});
 
-  dl.onclick=function(){
-    if(!img)return;draw(false);
-    cv.toBlob(function(b){
-      var a=document.createElement('a'),n=nm.value.trim().replace(/[\\/:*?"<>|]+/g,'').slice(0,40);
-      a.href=URL.createObjectURL(b);a.download='প্রতিষ্ঠাবার্ষিকী-ফ্রেম'+(n?'-'+n:'')+'.png';
+  var LIMIT=3.8*1024*1024;
+  function blobOf(c,q){return new Promise(function(res){c.toBlob(res,'image/jpeg',q)})}
+  async function exportJpg(){
+    draw(false);
+    var size=cv.width,c=document.createElement('canvas'),x;
+    var q=0.95,blob;
+    while(true){
+      c.width=c.height=size;x=c.getContext('2d');x.imageSmoothingQuality='high';
+      x.fillStyle='#fff';x.fillRect(0,0,size,size);x.drawImage(cv,0,0,size,size);
+      blob=await blobOf(c,q);
+      if(blob.size<=LIMIT)return blob;
+      if(q>0.84)q=Math.round((q-0.03)*100)/100;else size=Math.round(size*0.92);
+    }
+  }
+  dl.onclick=async function(){
+    if(!img)return;dl.disabled=true;var t=dl.textContent;dl.textContent='তৈরি হচ্ছে…';
+    try{
+      var b=await exportJpg(),a=document.createElement('a'),n=nm.value.trim().replace(/[\\/:*?"<>|]+/g,'').slice(0,40);
+      a.href=URL.createObjectURL(b);a.download='প্রতিষ্ঠাবার্ষিকী-ফ্রেম'+(n?'-'+n:'')+'.jpg';
       document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href)},2000);
-    },'image/png');
+    }finally{dl.textContent=t;dl.disabled=false;draw()}
   };
 
   var fl=function(){draw()};
