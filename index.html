@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>৮ম প্রতিষ্ঠাবার্ষিকী ফটো ফ্রেম | ইসলামী বিশ্ববিদ্যালয় রিপোর্টার্স ইউনিটি</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600&family=Noto+Serif+Bengali:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--g:#0A5A3A;--gd:#06402A;--ink:#1d2b24;--mute:#5c7266;--line:#d5e2da;--bg:#f3f7f5}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Hind Siliguri",system-ui,sans-serif;color:var(--ink);background:var(--bg);min-height:100vh}
+header{text-align:center;padding:28px 16px 6px}
+h1{margin:0;font-family:"Noto Serif Bengali",serif;font-weight:800;font-size:clamp(24px,4vw,34px);color:var(--g)}
+header p{margin:6px 0 0;color:var(--mute);font-size:16px}
+main{max-width:1080px;margin:0 auto;padding:18px 16px 40px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start}
+.stage{background:#fff;border-radius:18px;padding:12px;box-shadow:0 10px 30px rgba(6,64,42,.10)}
+canvas{display:block;width:100%;height:auto;border-radius:12px;touch-action:none;cursor:grab}
+canvas.empty{cursor:pointer}canvas.drag{cursor:grabbing}
+.panel{background:#fff;border-radius:18px;padding:20px;box-shadow:0 10px 30px rgba(6,64,42,.10);display:flex;flex-direction:column;gap:18px}
+label,.lbl{font-weight:600;font-size:15px;display:block;margin-bottom:7px}
+input[type=text]{width:100%;font:inherit;font-size:17px;padding:11px 13px;border:1.5px solid var(--line);border-radius:10px;background:#fbfdfc;color:var(--ink)}
+input[type=text]:focus{outline:none;border-color:var(--g);box-shadow:0 0 0 3px rgba(10,90,58,.15)}
+button{font:inherit;font-weight:600;cursor:pointer;border-radius:10px;border:1.5px solid var(--line);background:#fff;color:var(--g);padding:11px 14px;font-size:16px}
+button:hover{border-color:var(--g)}
+button:focus-visible{outline:3px solid rgba(10,90,58,.35);outline-offset:2px}
+.primary{background:linear-gradient(135deg,#0E7A4E,var(--gd));color:#fff;border:0;padding:14px;font-size:18px}
+.primary:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.zoom{display:flex;align-items:center;gap:10px}
+.zoom button{flex:0 0 44px;padding:8px 0;font-size:22px;line-height:1}
+input[type=range]{flex:1;accent-color:var(--g);height:28px}
+.hint{font-size:14px;color:var(--mute);margin:0;line-height:1.5}
+.ctrl[disabled],.zoom.off{opacity:.45;pointer-events:none}
+footer{text-align:center;color:var(--mute);font-size:14px;padding:0 16px 28px}
+@media(max-width:860px){main{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>৮ম প্রতিষ্ঠাবার্ষিকী ফটো ফ্রেম</h1>
+  <p>ছবি যোগ করুন, নাম ও পদবী লিখুন, তারপর ডাউনলোড করুন।</p>
+</header>
+<main>
+  <div class="stage"><canvas id="cv" class="empty" width="2508" height="2508" aria-label="ফ্রেম প্রিভিউ"></canvas></div>
+  <section class="panel">
+    <div>
+      <span class="lbl">ছবি</span>
+      <div class="row"><button id="pick" type="button">ছবি বেছে নিন</button><button id="reset" type="button" class="ctrl" disabled>রিসেট</button></div>
+      <input id="file" type="file" accept="image/*" hidden>
+    </div>
+    <div class="zoom off" id="zoomBox">
+      <button id="zo" type="button" aria-label="জুম আউট">−</button>
+      <input id="zr" type="range" min="50" max="400" value="100" aria-label="জুম">
+      <button id="zi" type="button" aria-label="জুম ইন">+</button>
+    </div>
+    <p class="hint">ছবির উপর আঙুল বা মাউস দিয়ে টেনে সরান। জুম করতে স্লাইডার, মাউসের স্ক্রল বা দুই আঙুলে চিমটি দিন।</p>
+    <div><label for="nm">নাম</label><input id="nm" type="text" maxlength="60" placeholder="আপনার নাম" autocomplete="off"></div>
+    <div><label for="ds">পদবী</label><input id="ds" type="text" maxlength="80" placeholder="আপনার পদবী" autocomplete="off"></div>
+    <button id="dl" class="primary" type="button" disabled>ডাউনলোড (PNG)</button>
+  </section>
+</main>
+<footer>ইসলামী বিশ্ববিদ্যালয় রিপোর্টার্স ইউনিটি</footer>
+<script>
+(function(){
+  var K=2, HOLE={x:147,y:215,w:960,h:670,r:28};
+  var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  var fileEl=document.getElementById('file'), nm=document.getElementById('nm'), ds=document.getElementById('ds');
+  var zr=document.getElementById('zr'), zoomBox=document.getElementById('zoomBox'), dl=document.getElementById('dl'), resetBtn=document.getElementById('reset');
+  var frame=new Image(), img=null, base=1, z=1, cx=0, cy=0, frameReady=false;
+  frame.onload=function(){frameReady=true;draw()}; frame.src='frame.png';
+
+  function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+  function fit(text,font,weight,max,start,min){var s=start;ctx.font=weight+' '+s+'px '+font;while(s>min&&ctx.measureText(text).width>max){s-=1;ctx.font=weight+' '+s+'px '+font}return s}
+
+  function draw(preview){
+    if(!frameReady)return;
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.save();ctx.scale(K,K);
+    ctx.save();rr(ctx,HOLE.x,HOLE.y,HOLE.w,HOLE.h,HOLE.r);ctx.clip();
+    ctx.fillStyle=img?'#fff':'#eef4f0';ctx.fillRect(HOLE.x,HOLE.y,HOLE.w,HOLE.h);
+    if(img){var w=img.width*base*z,h=img.height*base*z;
+      ctx.drawImage(img,HOLE.x+HOLE.w/2+cx-w/2,HOLE.y+HOLE.h/2+cy-h/2,w,h)}
+    ctx.restore();ctx.restore();
+    ctx.drawImage(frame,0,0,cv.width,cv.height);
+    ctx.save();ctx.scale(K,K);ctx.textBaseline='alphabetic';ctx.textAlign='left';
+    var n=nm.value.trim(), d=ds.value.trim(), maxW=800;
+    if(n){fit(n,'"Noto Serif Bengali",serif',700,maxW,40,20);ctx.fillStyle='#0A5A3A';ctx.fillText(n,300,958)}
+    if(d){fit(d,'"Hind Siliguri",sans-serif',600,maxW,30,16);ctx.fillStyle='#3E5B4C';ctx.fillText(d,300,1030)}
+    if(!img&&preview!==false){
+      ctx.textAlign='center';ctx.fillStyle='#0A5A3A';
+      ctx.font='700 34px "Noto Serif Bengali",serif';ctx.fillText('ছবি যোগ করতে এখানে ট্যাপ করুন',627,565);
+      ctx.strokeStyle='#0A5A3A';ctx.lineWidth=5;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(627,430);ctx.lineTo(627,490);ctx.moveTo(597,460);ctx.lineTo(657,460);ctx.stroke();
+      ctx.beginPath();ctx.arc(627,460,48,0,Math.PI*2);ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function clamp(){
+    var w=img.width*base*z,h=img.height*base*z;
+    var mx=Math.abs(w-HOLE.w)/2,my=Math.abs(h-HOLE.h)/2;
+    cx=Math.max(-mx,Math.min(mx,cx));cy=Math.max(-my,Math.min(my,cy));
+  }
+  function setZoom(v){
+    if(!img)return;z=Math.max(.5,Math.min(4,v));zr.value=Math.round(z*100);clamp();draw();
+  }
+  function load(f){
+    if(!f||!/^image\//.test(f.type))return;
+    var u=URL.createObjectURL(f),im=new Image();
+    im.onload=function(){
+      img=im;base=Math.max(HOLE.w/im.width,HOLE.h/im.height);z=1;cx=cy=0;zr.value=100;
+      cv.classList.remove('empty');zoomBox.classList.remove('off');dl.disabled=false;resetBtn.disabled=false;draw();
+    };
+    im.src=u;
+  }
+
+  document.getElementById('pick').onclick=function(){fileEl.click()};
+  fileEl.onchange=function(){load(fileEl.files[0]);fileEl.value=''};
+  resetBtn.onclick=function(){if(!img)return;z=1;cx=cy=0;zr.value=100;draw()};
+  zr.oninput=function(){setZoom(zr.value/100)};
+  document.getElementById('zi').onclick=function(){setZoom(z*1.1)};
+  document.getElementById('zo').onclick=function(){setZoom(z/1.1)};
+  nm.oninput=ds.oninput=function(){draw()};
+
+  // pan, pinch, wheel
+  var ptrs=new Map(), last=null;
+  function k(){return 1254/cv.getBoundingClientRect().width}
+  cv.addEventListener('pointerdown',function(e){
+    if(!img){fileEl.click();return}
+    cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});cv.classList.add('drag');last=null;
+  });
+  cv.addEventListener('pointermove',function(e){
+    if(!img||!ptrs.has(e.pointerId))return;
+    var p=ptrs.get(e.pointerId),prev={x:p.x,y:p.y};p.x=e.clientX;p.y=e.clientY;
+    if(ptrs.size===1){cx+=(p.x-prev.x)*k();cy+=(p.y-prev.y)*k();clamp();draw()}
+    else if(ptrs.size===2){
+      var a=Array.from(ptrs.values()),d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
+      if(last)setZoom(z*d/last);last=d;
+    }
+  });
+  function up(e){ptrs.delete(e.pointerId);last=null;if(!ptrs.size)cv.classList.remove('drag')}
+  cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+  cv.addEventListener('wheel',function(e){if(!img)return;e.preventDefault();setZoom(z*(e.deltaY<0?1.06:1/1.06))},{passive:false});
+
+  // drag & drop a file
+  ['dragover','drop'].forEach(function(t){document.addEventListener(t,function(e){e.preventDefault();if(t==='drop'&&e.dataTransfer.files[0])load(e.dataTransfer.files[0])})});
+
+  dl.onclick=function(){
+    if(!img)return;draw(false);
+    cv.toBlob(function(b){
+      var a=document.createElement('a'),n=nm.value.trim().replace(/[\\/:*?"<>|]+/g,'').slice(0,40);
+      a.href=URL.createObjectURL(b);a.download='প্রতিষ্ঠাবার্ষিকী-ফ্রেম'+(n?'-'+n:'')+'.png';
+      document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href)},2000);
+    },'image/png');
+  };
+
+  var fl=function(){draw()};
+  if(document.fonts){Promise.all([document.fonts.load('700 40px "Noto Serif Bengali"','আ'),document.fonts.load('600 30px "Hind Siliguri"','আ')]).then(fl,fl);document.fonts.ready.then(fl)}
+})();
+</script>
+</body>
+</html>
